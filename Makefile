@@ -1,0 +1,13 @@
+.PHONY: all
+all: build install
+
+.PHONY: build
+build:
+	goimports -w .
+	go fmt ./...
+	go test -v ./...
+	go vet -v ./...
+
+.PHONY: install
+install:
+	go install -v ./...
