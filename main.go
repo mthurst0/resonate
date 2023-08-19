@@ -36,31 +36,54 @@ func extractStrings(filePath string) (map[string]bool, error) {
 	return uniqueStrings, nil
 }
 
+type collector interface {
+	collectFile(filePath string, strs map[string]bool)
+}
+
 // collectUniqueStrings walks a directory and returns a map of all unique strings
-func collectUniqueStrings(dir string) (map[string]bool, error) {
-	uniqueStrings := make(map[string]bool)
+func collectUniqueStrings(dir string, col collector) error {
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if !info.IsDir() {
 			if strings.HasSuffix(path, ".md") {
-				fmt.Println(path)
 				strs, err := extractStrings(path)
 				if err != nil {
 					return err
 				}
+				uniqueStrings := make(map[string]bool)
 				for str := range strs {
 					uniqueStrings[str] = true
 				}
+				col.collectFile(path, uniqueStrings)
 			}
 		}
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return uniqueStrings, nil
+	return nil
+}
+
+type DefaultCollector struct {
+	uniqueStrings map[string]bool
+	filenames     []string
+}
+
+func NewDefaultCollector() *DefaultCollector {
+	return &DefaultCollector{
+		uniqueStrings: make(map[string]bool),
+		filenames:     make([]string, 0),
+	}
+}
+
+func (c *DefaultCollector) collectFile(filePath string, strs map[string]bool) {
+	for str := range strs {
+		c.uniqueStrings[str] = true
+	}
+	c.filenames = append(c.filenames, filePath)
 }
 
 func main() {
@@ -69,10 +92,12 @@ func main() {
 		return
 	}
 	dir := os.Args[1]
-	uniqueStrings, err := collectUniqueStrings(dir)
+	col := NewDefaultCollector()
+	err := collectUniqueStrings(dir, col)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
-	fmt.Printf("Unique strings: %d\n", len(uniqueStrings))
+	fmt.Printf("Files: %d\n", len(col.filenames))
+	fmt.Printf("Unique strings: %d\n", len(col.uniqueStrings))
 }
