@@ -65,7 +65,7 @@ func collectUniqueStrings(dir string) (map[string]bool, error) {
 
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Println("Usage: main <directory>")
+		fmt.Println("Usage: resonate <directory>")
 		return
 	}
 	dir := os.Args[1]
